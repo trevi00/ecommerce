@@ -1,8 +1,8 @@
 -- 테스트용 사용자 데이터
 INSERT INTO users (email, password, name, phone, role) VALUES
-('user1@example.com', 'password123', '홍길동', '010-1234-5678', 'GENERAL'),
-('user2@example.com', 'password123', '김철수', '010-2345-6789', 'VIP'),
-('user3@example.com', 'password123', '이영희', '010-3456-7890', 'GENERAL');
+('user1@example.com', '$2a$10$8jKFnD.RQc9jKzM6gVt3R.sCvKr3YFp5x3wH1EHKxvL3ZqWh3aJjS', '홍길동', '010-1234-5678', 'GENERAL'),
+('user2@example.com', '$2a$10$8jKFnD.RQc9jKzM6gVt3R.sCvKr3YFp5x3wH1EHKxvL3ZqWh3aJjS', '김철수', '010-2345-6789', 'VIP'),
+('user3@example.com', '$2a$10$8jKFnD.RQc9jKzM6gVt3R.sCvKr3YFp5x3wH1EHKxvL3ZqWh3aJjS', '이영희', '010-3456-7890', 'GENERAL');
 
 -- 테스트용 상품 데이터
 INSERT INTO products (name, description, price, stock_quantity, category) VALUES
