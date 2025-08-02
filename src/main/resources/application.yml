@@ -33,6 +33,10 @@ spring:
           max-idle: 8
           min-idle: 0
           max-wait: -1ms
+
+jwt:
+  secret: ecommerce-secret-key-for-jwt-token-generation-must-be-at-least-256-bits
+  token-validity-in-seconds: 86400  # 24시간
           
 logging:
   level:
