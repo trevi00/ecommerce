@@ -48,8 +48,8 @@ public class OrderService {
     @Transactional
     public OrderResponse createOrder(Long userId, CreateOrderRequest request) {
         // 상품 정보 조회
-        List<Long> productIds = request.getItems().stream()
-                .map(CreateOrderRequest.OrderItemRequest::getProductId)
+        List<Long> productIds = request.items().stream()
+                .map(CreateOrderRequest.OrderItemRequest::productId)
                 .collect(Collectors.toList());
         
         List<Product> products = productService.getProductEntities(productIds);
@@ -58,11 +58,11 @@ public class OrderService {
         
         // 주문 항목 생성 및 재고 확인
         List<OrderItem> orderItems = new ArrayList<>();
-        for (CreateOrderRequest.OrderItemRequest itemRequest : request.getItems()) {
-            Product product = productMap.get(itemRequest.getProductId());
+        for (CreateOrderRequest.OrderItemRequest itemRequest : request.items()) {
+            Product product = productMap.get(itemRequest.productId());
             
             // 재고 확인
-            if (!product.isAvailable(itemRequest.getQuantity())) {
+            if (!product.isAvailable(itemRequest.quantity())) {
                 throw new BusinessException(ErrorCode.INSUFFICIENT_STOCK, 
                     "재고가 부족합니다. 상품: " + product.getName());
             }
@@ -70,7 +70,7 @@ public class OrderService {
             // 주문 항목 생성
             OrderItem orderItem = OrderItem.builder()
                     .productId(product.getId())
-                    .quantity(itemRequest.getQuantity())
+                    .quantity(itemRequest.quantity())
                     .unitPrice(product.getPrice())
                     .build();
             
@@ -87,9 +87,9 @@ public class OrderService {
         Order savedOrder = orderRepository.save(order);
         
         // 재고 차감
-        for (CreateOrderRequest.OrderItemRequest itemRequest : request.getItems()) {
-            Product product = productMap.get(itemRequest.getProductId());
-            int updatedRows = productRepository.decreaseStock(product.getId(), itemRequest.getQuantity());
+        for (CreateOrderRequest.OrderItemRequest itemRequest : request.items()) {
+            Product product = productMap.get(itemRequest.productId());
+            int updatedRows = productRepository.decreaseStock(product.getId(), itemRequest.quantity());
             if (updatedRows == 0) {
                 throw new BusinessException(ErrorCode.INSUFFICIENT_STOCK,
                     "재고 차감 실패. 상품: " + product.getName());
@@ -197,16 +197,16 @@ public class OrderService {
         
         // 장바구니 아이템을 주문 요청으로 변환
         List<CreateOrderRequest.OrderItemRequest> orderItems = cart.getCartItems().stream()
-                .map(cartItem -> CreateOrderRequest.OrderItemRequest.builder()
-                        .productId(cartItem.getProductId())
-                        .quantity(cartItem.getQuantity())
-                        .build())
+                .map(cartItem -> new CreateOrderRequest.OrderItemRequest(
+                        cartItem.getProductId(),
+                        cartItem.getQuantity()
+                ))
                 .collect(Collectors.toList());
         
-        CreateOrderRequest createOrderRequest = CreateOrderRequest.builder()
-                .items(orderItems)
-                .couponId(request.getCouponId())
-                .build();
+        CreateOrderRequest createOrderRequest = new CreateOrderRequest(
+                orderItems,
+                request.getCouponId()
+        );
         
         // 주문 생성
         OrderResponse orderResponse = createOrder(userId, createOrderRequest);

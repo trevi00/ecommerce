@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
@@ -90,22 +91,17 @@ class OrderServiceTest {
     class CreateOrder {
         
         @Test
-        @DisplayName("정상적인 주문 생성")
+        @DisplayName("정상적인 주문 생성 - assertAll과 Mockito verify 활용")
         void createOrder_Success() {
             // given
             Long userId = 1L;
-            CreateOrderRequest request = CreateOrderRequest.builder()
-                    .items(Arrays.asList(
-                            CreateOrderRequest.OrderItemRequest.builder()
-                                    .productId(1L)
-                                    .quantity(1)
-                                    .build(),
-                            CreateOrderRequest.OrderItemRequest.builder()
-                                    .productId(2L)
-                                    .quantity(2)
-                                    .build()
-                    ))
-                    .build();
+            CreateOrderRequest request = new CreateOrderRequest(
+                    Arrays.asList(
+                            new CreateOrderRequest.OrderItemRequest(1L, 1),
+                            new CreateOrderRequest.OrderItemRequest(2L, 2)
+                    ),
+                    null
+            );
             
             given(productService.getProductEntities(anyList()))
                     .willReturn(Arrays.asList(testProduct1, testProduct2));
@@ -116,13 +112,24 @@ class OrderServiceTest {
             // when
             OrderResponse response = orderService.createOrder(userId, request);
             
-            // then
-            assertThat(response).isNotNull();
-            assertThat(response.getUserId()).isEqualTo(userId);
-            assertThat(response.getItems()).hasSize(2);
+            // then - assertAll로 그룹화된 검증
+            assertAll(
+                "주문 생성 응답 검증",
+                () -> assertNotNull(response, "주문 생성 응답이 null이 아니어야 함"),
+                () -> assertEquals(userId, response.getUserId()),
+                () -> assertEquals(2, response.getItems().size()),
+                () -> assertTrue(response.getItems().size() > 0, "주문 항목이 있어야 함"),
+                () -> assertFalse(response.getItems().isEmpty(), "주문 항목 리스트가 비어있으면 안됨")
+            );
             
+            // Mockito verify 검증 - 상호작용 확인
+            verify(productService).getProductEntities(anyList());
+            verify(orderRepository).save(any(Order.class));
             verify(productRepository).decreaseStock(1L, 1);
             verify(productRepository).decreaseStock(2L, 2);
+            
+            // 추가적인 verify - 호출 횟수 및 순서 검증
+            verify(productRepository, times(2)).decreaseStock(anyLong(), anyInt());
         }
         
         @Test
@@ -130,14 +137,12 @@ class OrderServiceTest {
         void createOrder_InsufficientStock_ThrowsException() {
             // given
             Long userId = 1L;
-            CreateOrderRequest request = CreateOrderRequest.builder()
-                    .items(Arrays.asList(
-                            CreateOrderRequest.OrderItemRequest.builder()
-                                    .productId(1L)
-                                    .quantity(100)  // 재고보다 많은 수량
-                                    .build()
-                    ))
-                    .build();
+            CreateOrderRequest request = new CreateOrderRequest(
+                    Arrays.asList(
+                            new CreateOrderRequest.OrderItemRequest(1L, 100)  // 재고보다 많은 수량
+                    ),
+                    null
+            );
             
             given(productService.getProductEntities(anyList()))
                     .willReturn(Arrays.asList(testProduct1));
@@ -156,7 +161,7 @@ class OrderServiceTest {
     class GetOrder {
         
         @Test
-        @DisplayName("정상적인 주문 조회")
+        @DisplayName("정상적인 주문 조회 - 종합적인 검증")
         void getOrder_Success() {
             // given
             Long orderId = 1L;
@@ -168,9 +173,18 @@ class OrderServiceTest {
             // when
             OrderResponse response = orderService.getOrder(orderId, userId);
             
-            // then
-            assertThat(response).isNotNull();
-            assertThat(response.getUserId()).isEqualTo(userId);
+            // then - assertAll과 다양한 assertion
+            assertAll(
+                "주문 조회 응답 검증",
+                () -> assertNotNull(response, "주문 조회 응답이 null이 아니어야 함"),
+                () -> assertEquals(userId, response.getUserId()),
+                () -> assertTrue(orderId > 0, "유효한 주문 ID여야 함"),
+                () -> assertFalse(response.getItems().isEmpty(), "주문 항목이 있어야 함")
+            );
+            
+            // Mockito verify
+            verify(orderRepository).findByIdAndUserId(orderId, userId);
+            verify(orderRepository, times(1)).findByIdAndUserId(anyLong(), anyLong());
         }
         
         @Test

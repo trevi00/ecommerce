@@ -43,17 +43,17 @@ class UserControllerTest {
     
     @BeforeEach
     void setUp() {
-        signUpRequest = SignUpRequest.builder()
-                .email("test@example.com")
-                .password("password123")
-                .name("홍길동")
-                .phone("010-1234-5678")
-                .build();
+        signUpRequest = new SignUpRequest(
+                "test@example.com",
+                "password123",
+                "홍길동",
+                "010-1234-5678"
+        );
         
-        loginRequest = LoginRequest.builder()
-                .email("test@example.com")
-                .password("password123")
-                .build();
+        loginRequest = new LoginRequest(
+                "test@example.com",
+                "password123"
+        );
     }
     
     @Test
@@ -64,8 +64,8 @@ class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(signUpRequest)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.email").value(signUpRequest.getEmail()))
-                .andExpect(jsonPath("$.name").value(signUpRequest.getName()));
+                .andExpect(jsonPath("$.email").value(signUpRequest.email()))
+                .andExpect(jsonPath("$.name").value(signUpRequest.name()));
     }
     
     @Test
@@ -99,7 +99,7 @@ class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").exists())
                 .andExpect(jsonPath("$.tokenType").value("Bearer"))
-                .andExpect(jsonPath("$.user.email").value(loginRequest.getEmail()));
+                .andExpect(jsonPath("$.user.email").value(loginRequest.email()));
     }
     
     @Test
@@ -110,10 +110,10 @@ class UserControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(signUpRequest)));
         
-        LoginRequest wrongPasswordRequest = LoginRequest.builder()
-                .email("test@example.com")
-                .password("wrongPassword")
-                .build();
+        LoginRequest wrongPasswordRequest = new LoginRequest(
+                "test@example.com",
+                "wrongPassword"
+        );
         
         // when & then
         mockMvc.perform(post("/api/users/login")
@@ -171,8 +171,8 @@ class UserControllerTest {
         mockMvc.perform(get("/api/users/me")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value(signUpRequest.getEmail()))
-                .andExpect(jsonPath("$.name").value(signUpRequest.getName()));
+                .andExpect(jsonPath("$.email").value(signUpRequest.email()))
+                .andExpect(jsonPath("$.name").value(signUpRequest.name()));
     }
     
     @Test

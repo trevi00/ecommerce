@@ -40,21 +40,21 @@ class OrderControllerTest {
     @BeforeEach
     void setUp() throws Exception {
         // 테스트 사용자 생성 및 로그인
-        SignUpRequest signUpRequest = SignUpRequest.builder()
-                .email("order-test@example.com")
-                .password("password123")
-                .name("주문테스트")
-                .phone("010-1111-2222")
-                .build();
+        SignUpRequest signUpRequest = new SignUpRequest(
+                "order-test@example.com",
+                "password123",
+                "주문테스트",
+                "010-1111-2222"
+        );
         
         mockMvc.perform(post("/api/users/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(signUpRequest)));
         
-        LoginRequest loginRequest = LoginRequest.builder()
-                .email("order-test@example.com")
-                .password("password123")
-                .build();
+        LoginRequest loginRequest = new LoginRequest(
+                "order-test@example.com",
+                "password123"
+        );
         
         String loginResponse = mockMvc.perform(post("/api/users/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -70,18 +70,13 @@ class OrderControllerTest {
     @DisplayName("주문 생성 성공")
     void createOrder_Success() throws Exception {
         // given
-        CreateOrderRequest request = CreateOrderRequest.builder()
-                .items(Arrays.asList(
-                        CreateOrderRequest.OrderItemRequest.builder()
-                                .productId(1L)
-                                .quantity(1)
-                                .build(),
-                        CreateOrderRequest.OrderItemRequest.builder()
-                                .productId(2L)
-                                .quantity(2)
-                                .build()
-                ))
-                .build();
+        CreateOrderRequest request = new CreateOrderRequest(
+                Arrays.asList(
+                        new CreateOrderRequest.OrderItemRequest(1L, 1),
+                        new CreateOrderRequest.OrderItemRequest(2L, 2)
+                ),
+                null
+        );
         
         // when & then
         mockMvc.perform(post("/api/orders")
@@ -99,14 +94,12 @@ class OrderControllerTest {
     @DisplayName("인증 없이 주문 생성 시 실패")
     void createOrder_WithoutAuth_Fail() throws Exception {
         // given
-        CreateOrderRequest request = CreateOrderRequest.builder()
-                .items(Arrays.asList(
-                        CreateOrderRequest.OrderItemRequest.builder()
-                                .productId(1L)
-                                .quantity(1)
-                                .build()
-                ))
-                .build();
+        CreateOrderRequest request = new CreateOrderRequest(
+                Arrays.asList(
+                        new CreateOrderRequest.OrderItemRequest(1L, 1)
+                ),
+                null
+        );
         
         // when & then
         mockMvc.perform(post("/api/orders")
@@ -119,14 +112,12 @@ class OrderControllerTest {
     @DisplayName("주문 목록 조회 성공")
     void getMyOrders_Success() throws Exception {
         // given - 주문 생성
-        CreateOrderRequest request = CreateOrderRequest.builder()
-                .items(Arrays.asList(
-                        CreateOrderRequest.OrderItemRequest.builder()
-                                .productId(1L)
-                                .quantity(1)
-                                .build()
-                ))
-                .build();
+        CreateOrderRequest request = new CreateOrderRequest(
+                Arrays.asList(
+                        new CreateOrderRequest.OrderItemRequest(1L, 1)
+                ),
+                null
+        );
         
         mockMvc.perform(post("/api/orders")
                 .header("Authorization", "Bearer " + authToken)
@@ -145,14 +136,12 @@ class OrderControllerTest {
     @DisplayName("주문 취소 성공")
     void cancelOrder_Success() throws Exception {
         // given - 주문 생성
-        CreateOrderRequest request = CreateOrderRequest.builder()
-                .items(Arrays.asList(
-                        CreateOrderRequest.OrderItemRequest.builder()
-                                .productId(1L)
-                                .quantity(1)
-                                .build()
-                ))
-                .build();
+        CreateOrderRequest request = new CreateOrderRequest(
+                Arrays.asList(
+                        new CreateOrderRequest.OrderItemRequest(1L, 1)
+                ),
+                null
+        );
         
         String createResponse = mockMvc.perform(post("/api/orders")
                         .header("Authorization", "Bearer " + authToken)

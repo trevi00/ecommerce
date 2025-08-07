@@ -36,19 +36,19 @@ public class UserService {
     @Transactional
     public UserResponse signUp(SignUpRequest request) {
         // 이메일 중복 검사
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new EmailAlreadyExistsException(request.getEmail());
+        if (userRepository.existsByEmail(request.email())) {
+            throw new EmailAlreadyExistsException(request.email());
         }
         
         // 비밀번호 암호화
-        String encodedPassword = passwordEncoder.encode(request.getPassword());
+        String encodedPassword = passwordEncoder.encode(request.password());
         
         // User 엔티티 생성
         User user = User.builder()
-                .email(request.getEmail())
+                .email(request.email())
                 .password(encodedPassword)
-                .name(request.getName())
-                .phone(request.getPhone())
+                .name(request.name())
+                .phone(request.phone())
                 .role(UserRole.GENERAL)
                 .build();
         
@@ -64,11 +64,11 @@ public class UserService {
      */
     public LoginResponse login(LoginRequest request) {
         // 사용자 조회
-        User user = userRepository.findByEmail(request.getEmail())
+        User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new UserNotFoundException("이메일 또는 비밀번호가 일치하지 않습니다."));
         
         // 비밀번호 검증
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new InvalidPasswordException();
         }
         
