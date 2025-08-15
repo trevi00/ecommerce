@@ -1,46 +1,219 @@
 version: '3.8'
 
 services:
+  # MySQL Database
   mysql:
     image: mysql:8.0
-    container_name: ecommerce-mysql
-    restart: always
-    ports:
-      - "3306:3306"
+    container_name: ecommerce_mysql
+    restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root1234
-      MYSQL_DATABASE: ecommerce_db
-      MYSQL_USER: ecommerce
-      MYSQL_PASSWORD: ecommerce1234
-      TZ: Asia/Seoul
-    command:
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
-      - --skip-character-set-client-handshake
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ecommerce
+      MYSQL_USER: ${MYSQL_USER:-ecommerce_app}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ecommerce_pass}
+      # 데이터 초기화 제어 변수
+      MYSQL_INIT_TEST_DATA: ${MYSQL_INIT_TEST_DATA:-true}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
     volumes:
+      # 데이터 영속성
       - mysql_data:/var/lib/mysql
-      - ./db/init:/docker-entrypoint-initdb.d
+      # 설정 파일
+      - ./docker/mysql/conf.d:/etc/mysql/conf.d:ro
+      # 초기화 스크립트 (순서대로 실행)
+      - ./docker/init:/docker-entrypoint-initdb.d:ro
+      # 백업 및 복원용 볼륨
+      - ./docker/backups:/backups
     networks:
-      - ecommerce-network
+      - ecommerce_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --innodb_buffer_pool_size=256M
+      --innodb_log_file_size=64M
+      --max_connections=200
+      --query_cache_size=0
+      --query_cache_type=0
+      --slow_query_log=1
+      --slow_query_log_file=/var/lib/mysql/slow.log
+      --long_query_time=2
 
+  # Redis Cache
   redis:
     image: redis:7-alpine
-    container_name: ecommerce-redis
-    restart: always
+    container_name: ecommerce_redis
+    restart: unless-stopped
     ports:
-      - "6379:6379"
-    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
+      - ./docker/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
     networks:
-      - ecommerce-network
+      - ecommerce_network
+    command: redis-server /usr/local/etc/redis/redis.conf
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Spring Boot Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ecommerce_app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    environment:
+      # Spring Profiles
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
+      
+      # Database Configuration
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/ecommerce?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-ecommerce_app}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-ecommerce_pass}
+      
+      # Redis Configuration  
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      
+      # JWT Configuration
+      JWT_SECRET: ${JWT_SECRET:-your-very-secure-jwt-secret-key-here-make-it-long}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      
+      # Payment Configuration
+      PAYMENT_TOKEN_VALIDITY_IN_MINUTES: ${PAYMENT_TOKEN_VALIDITY:-30}
+      
+      # Logging
+      LOGGING_LEVEL_ROOT: ${LOG_LEVEL:-INFO}
+      LOGGING_LEVEL_ORG_ZB_ECOMMERCE: ${APP_LOG_LEVEL:-DEBUG}
+      
+      # Monitoring
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,metrics,prometheus
+      MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: always
+    volumes:
+      # 로그 파일
+      - app_logs:/app/logs
+      # 설정 파일 오버라이드 (선택사항)
+      - ./docker/app/config:/app/config:ro
+    networks:
+      - ecommerce_network
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Prometheus (모니터링)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: ecommerce_prometheus
+    restart: unless-stopped
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - ecommerce_network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    depends_on:
+      - app
+
+  # Grafana (대시보드)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ecommerce_grafana
+    restart: unless-stopped
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - ecommerce_network
+    depends_on:
+      - prometheus
+
+# 개발용 서비스들 (프로덕션에서는 제외)
+  # phpMyAdmin (데이터베이스 관리)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: ecommerce_phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: ${MYSQL_USER:-ecommerce_app}
+      PMA_PASSWORD: ${MYSQL_PASSWORD:-ecommerce_pass}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+    ports:
+      - "${PHPMYADMIN_PORT:-8081}:80"
+    networks:
+      - ecommerce_network
+    depends_on:
+      mysql:
+        condition: service_healthy
+    profiles:
+      - dev
+      - debug
+
+  # Redis Commander (Redis 관리)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: ecommerce_redis_commander
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "${REDIS_COMMANDER_PORT:-8082}:8081"
+    networks:
+      - ecommerce_network
+    depends_on:
+      - redis
+    profiles:
+      - dev
+      - debug
+
+networks:
+  ecommerce_network:
+    driver: bridge
+    name: ecommerce_network
 
 volumes:
   mysql_data:
-    driver: local
+    name: ecommerce_mysql_data
   redis_data:
-    driver: local
-
-networks:
-  ecommerce-network:
-    driver: bridge
+    name: ecommerce_redis_data
+  prometheus_data:
+    name: ecommerce_prometheus_data
+  grafana_data:
+    name: ecommerce_grafana_data
+  app_logs:
+    name: ecommerce_app_logs

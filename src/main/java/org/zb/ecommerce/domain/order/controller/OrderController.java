@@ -103,7 +103,7 @@ public class OrderController {
             @AuthUser Long userId,
             @RequestBody(required = false) CreateOrderFromCartRequest request) {
         if (request == null) {
-            request = new CreateOrderFromCartRequest();
+            request = new CreateOrderFromCartRequest(null);
         }
         OrderResponse response = orderService.createOrderFromCart(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

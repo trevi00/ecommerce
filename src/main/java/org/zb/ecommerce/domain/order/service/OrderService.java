@@ -205,7 +205,7 @@ public class OrderService {
         
         CreateOrderRequest createOrderRequest = new CreateOrderRequest(
                 orderItems,
-                request.getCouponId()
+                request.couponId()
         );
         
         // 주문 생성

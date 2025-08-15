@@ -38,12 +38,12 @@ public class OrderItem {
         this.productId = productId;
         this.quantity = quantity;
         this.unitPrice = unitPrice;
-        this.totalPrice = calculateTotalPrice();
+        this.totalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
     }
     
     // 비즈니스 로직
-    private BigDecimal calculateTotalPrice() {
-        return this.unitPrice.multiply(BigDecimal.valueOf(this.quantity));
+    public BigDecimal getTotalPrice() {
+        return this.totalPrice;
     }
     
     // 검증 로직
