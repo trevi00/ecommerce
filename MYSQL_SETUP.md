@@ -1,7 +1,5 @@
 # MySQL 설정 및 실행 가이드
 
-## 🚀 빠른 시작
-
 ### 1. Docker Compose로 MySQL 및 Redis 실행
 ```bash
 # MySQL과 Redis 컨테이너 실행
@@ -28,7 +26,7 @@ docker-compose logs -f mysql
 - **MySQL**: localhost:3307
 - **Redis**: localhost:6380
 
-## 📊 데이터베이스 정보
+## 데이터베이스 정보
 
 ### MySQL 접속 정보
 - **Host**: localhost
@@ -42,7 +40,7 @@ docker-compose logs -f mysql
 - **Host**: localhost
 - **Port**: 6380
 
-## 🔧 프로파일 설정
+## 프로파일 설정
 
 ### 사용 가능한 프로파일
 1. **mysql** (기본) - MySQL + Redis 환경
@@ -59,7 +57,7 @@ java -jar app.jar --spring.profiles.active=h2
 java -jar app.jar --spring.profiles.active=docker
 ```
 
-## 🛠️ 유용한 명령어
+## 유용한 명령어
 
 ### Docker 관리
 ```bash
@@ -90,7 +88,7 @@ SELECT * FROM users;
 SELECT * FROM products;
 ```
 
-## 📝 초기 데이터
+## 초기 데이터
 
 ### 기본 생성 데이터
 1. **관리자 계정**
@@ -104,7 +102,7 @@ SELECT * FROM products;
    - WELCOME10: 10% 할인
    - SAVE50K: 5만원 할인
 
-## 🚨 문제 해결
+## 문제 해결
 
 ### 포트 충돌 시
 ```bash
@@ -133,9 +131,9 @@ GRANT ALL PRIVILEGES ON ecommerce.* TO 'ecommerce_app'@'%';
 FLUSH PRIVILEGES;
 ```
 
-## 🔄 테스트 실행
+## 테스트 실행
 
-테스트는 기존대로 TestContainers를 사용하므로 별도 MySQL 설정이 불필요합니다.
+테스트는 기존대로 TestContainers를 사용하므로 별도 MySQL 설정이 불필요.
 
 ```bash
 # 모든 테스트 실행
