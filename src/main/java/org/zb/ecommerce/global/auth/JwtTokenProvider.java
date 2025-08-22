@@ -1,43 +1,59 @@
 package org.zb.ecommerce.global.auth;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
+import java.security.Key;
 import java.util.Date;
 
 /**
- * JWT 토큰 생성 및 검증을 담당하는 컴포넌트
+ * JWT 토큰 생성 및 검증을 위한 유틸리티 클래스
+ * 주니어 개발자가 구현한 간단한 JWT 처리
  */
-@Slf4j
 @Component
 public class JwtTokenProvider {
     
-    private final SecretKey key;
+    private final Key key;
     private final long tokenValidityInMilliseconds;
     
-    public JwtTokenProvider(@Value("${jwt.secret}") String secretKey,
-                           @Value("${jwt.token-validity-in-seconds}") long tokenValidityInSeconds) {
-        this.key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
+    public JwtTokenProvider(
+            @Value("${jwt.secret:mySecretKey}") String secretKey,
+            @Value("${jwt.token-validity-in-seconds:3600}") long tokenValidityInSeconds) {
+        if (secretKey.length() < 32) {
+            this.key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+        } else {
+            this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
+        }
         this.tokenValidityInMilliseconds = tokenValidityInSeconds * 1000;
     }
     
     /**
-     * JWT 토큰 생성
+     * JWT 토큰 생성 (userId와 email 사용)
      */
     public String createToken(Long userId, String email) {
         Date now = new Date();
         Date validity = new Date(now.getTime() + tokenValidityInMilliseconds);
         
         return Jwts.builder()
-                .setSubject(String.valueOf(userId))
+                .setSubject(userId.toString())
                 .claim("email", email)
+                .setIssuedAt(now)
+                .setExpiration(validity)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+    
+    /**
+     * JWT 토큰 생성 (subject만 사용)
+     */
+    public String createToken(String subject) {
+        Date now = new Date();
+        Date validity = new Date(now.getTime() + tokenValidityInMilliseconds);
+        
+        return Jwts.builder()
+                .setSubject(subject)
                 .setIssuedAt(now)
                 .setExpiration(validity)
                 .signWith(key, SignatureAlgorithm.HS256)
@@ -47,15 +63,28 @@ public class JwtTokenProvider {
     /**
      * 토큰에서 사용자 ID 추출
      */
-    public Long getUserId(String token) {
-        return Long.parseLong(getClaims(token).getSubject());
+    public String getSubject(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
     }
     
     /**
-     * 토큰에서 이메일 추출
+     * 토큰에서 사용자 ID를 Long으로 추출
      */
-    public String getEmail(String token) {
-        return getClaims(token).get("email", String.class);
+    public Long getUserId(String token) {
+        String subject = getSubject(token);
+        return Long.parseLong(subject);
+    }
+    
+    /**
+     * 토큰 만료 시간 반환 (밀리초)
+     */
+    public Long getExpirationTime() {
+        return tokenValidityInMilliseconds;
     }
     
     /**
@@ -63,26 +92,13 @@ public class JwtTokenProvider {
      */
     public boolean validateToken(String token) {
         try {
-            getClaims(token);
+            Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token);
             return true;
-        } catch (Exception e) {
-            log.error("Invalid JWT token: {}", e.getMessage());
+        } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
-    }
-    
-    /**
-     * 토큰 만료 시간 반환 (초 단위)
-     */
-    public long getExpirationTime() {
-        return tokenValidityInMilliseconds / 1000;
-    }
-    
-    private Claims getClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
     }
 }

@@ -1,29 +1,19 @@
 package org.zb.ecommerce.domain.user.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-
 /**
- * 로그인 응답 DTO
+ * 로그인 응답 DTO - record로 변환
  */
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class LoginResponse {
-    
-    private String token;
-    private String tokenType = "Bearer";
-    private Long expiresIn;
-    private UserResponse user;
+public record LoginResponse(
+    String token,
+    String tokenType,
+    Long expiresIn,
+    UserResponse user
+) {
+    public LoginResponse(String token, Long expiresIn, UserResponse user) {
+        this(token, "Bearer", expiresIn, user);
+    }
     
     public static LoginResponse of(String token, Long expiresIn, UserResponse user) {
-        return LoginResponse.builder()
-                .token(token)
-                .expiresIn(expiresIn)
-                .user(user)
-                .build();
+        return new LoginResponse(token, expiresIn, user);
     }
 }

@@ -21,6 +21,8 @@ public class OrderItem {
     @Id
     private Long id;
     
+    private Long orderId;
+    
     private Long productId;
     
     private Integer quantity;
@@ -30,20 +32,21 @@ public class OrderItem {
     private BigDecimal totalPrice;
     
     @Builder
-    public OrderItem(Long productId, Integer quantity, BigDecimal unitPrice) {
+    public OrderItem(Long orderId, Long productId, Integer quantity, BigDecimal unitPrice) {
         validateProductId(productId);
         validateQuantity(quantity);
         validateUnitPrice(unitPrice);
         
+        this.orderId = orderId;
         this.productId = productId;
         this.quantity = quantity;
         this.unitPrice = unitPrice;
-        this.totalPrice = calculateTotalPrice();
+        this.totalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
     }
     
     // 비즈니스 로직
-    private BigDecimal calculateTotalPrice() {
-        return this.unitPrice.multiply(BigDecimal.valueOf(this.quantity));
+    public BigDecimal getTotalPrice() {
+        return this.totalPrice;
     }
     
     // 검증 로직

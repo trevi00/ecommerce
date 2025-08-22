@@ -8,7 +8,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.zb.ecommerce.domain.order.dto.CreateOrderFromCartRequest;
+import org.zb.ecommerce.domain.order.dto.CreateOrderFromCartWithCouponRequest;
 import org.zb.ecommerce.domain.order.dto.CreateOrderRequest;
+import org.zb.ecommerce.domain.order.dto.CreateOrderWithCouponRequest;
 import org.zb.ecommerce.domain.order.dto.OrderResponse;
 import org.zb.ecommerce.domain.order.entity.OrderStatus;
 import org.zb.ecommerce.domain.order.service.OrderService;
@@ -36,8 +38,19 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<OrderResponse> createOrder(
             @AuthUser Long userId,
-            @Valid @RequestBody CreateOrderRequest request) {
+            @RequestBody CreateOrderRequest request) {
         OrderResponse response = orderService.createOrder(userId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+    
+    /**
+     * 쿠폰을 사용한 주문 생성
+     */
+    @PostMapping("/with-coupon")
+    public ResponseEntity<OrderResponse> createOrderWithCoupon(
+            @AuthUser Long userId,
+            @RequestBody CreateOrderWithCouponRequest request) {
+        OrderResponse response = orderService.createOrderWithCoupon(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     
@@ -103,9 +116,20 @@ public class OrderController {
             @AuthUser Long userId,
             @RequestBody(required = false) CreateOrderFromCartRequest request) {
         if (request == null) {
-            request = new CreateOrderFromCartRequest();
+            request = new CreateOrderFromCartRequest(null);
         }
         OrderResponse response = orderService.createOrderFromCart(userId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+    
+    /**
+     * 장바구니에서 쿠폰을 사용한 주문 생성
+     */
+    @PostMapping("/cart/with-coupon")
+    public ResponseEntity<OrderResponse> createOrderFromCartWithCoupon(
+            @AuthUser Long userId,
+            @RequestBody CreateOrderFromCartWithCouponRequest request) {
+        OrderResponse response = orderService.createOrderFromCartWithCoupon(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }
