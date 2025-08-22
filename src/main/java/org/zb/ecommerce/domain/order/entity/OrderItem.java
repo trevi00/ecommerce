@@ -21,6 +21,8 @@ public class OrderItem {
     @Id
     private Long id;
     
+    private Long orderId;
+    
     private Long productId;
     
     private Integer quantity;
@@ -30,11 +32,12 @@ public class OrderItem {
     private BigDecimal totalPrice;
     
     @Builder
-    public OrderItem(Long productId, Integer quantity, BigDecimal unitPrice) {
+    public OrderItem(Long orderId, Long productId, Integer quantity, BigDecimal unitPrice) {
         validateProductId(productId);
         validateQuantity(quantity);
         validateUnitPrice(unitPrice);
         
+        this.orderId = orderId;
         this.productId = productId;
         this.quantity = quantity;
         this.unitPrice = unitPrice;

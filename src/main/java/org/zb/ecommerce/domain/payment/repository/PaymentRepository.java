@@ -31,8 +31,7 @@ public interface PaymentRepository extends CrudRepository<Payment, Long> {
     /**
      * 결제 상태로 결제 목록 조회
      */
-    @Query("SELECT * FROM payments WHERE status = :status")
-    List<Payment> findByStatus(@Param("status") String status);
+    List<Payment> findByStatus(PaymentStatus status);
     
     /**
      * 결제 상태로 결제 목록 조회 (생성일 내림차순)

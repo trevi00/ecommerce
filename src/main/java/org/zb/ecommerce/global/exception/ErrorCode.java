@@ -1,14 +1,10 @@
 package org.zb.ecommerce.global.exception;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 
 /**
  * 에러 코드 정의
  */
-@Getter
-@RequiredArgsConstructor
 public enum ErrorCode {
     
     // Common
@@ -53,4 +49,17 @@ public enum ErrorCode {
     
     private final HttpStatus status;
     private final String message;
+    
+    ErrorCode(HttpStatus status, String message) {
+        this.status = status;
+        this.message = message;
+    }
+    
+    public HttpStatus getStatus() {
+        return status;
+    }
+    
+    public String getMessage() {
+        return message;
+    }
 }

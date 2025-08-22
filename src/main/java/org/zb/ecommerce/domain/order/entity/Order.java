@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.MappedCollection;
 import org.springframework.data.relational.core.mapping.Table;
 import org.zb.ecommerce.domain.common.BaseTimeEntity;
 
@@ -38,22 +37,17 @@ public class Order extends BaseTimeEntity {
     
     private OrderStatus status;
     
-    @MappedCollection(idColumn = "order_id")
-    private List<OrderItem> orderItems = new ArrayList<>();
-    
     @Builder
-    public Order(Long userId, List<OrderItem> orderItems) {
+    public Order(Long userId, BigDecimal totalAmount) {
         validateUserId(userId);
-        validateOrderItems(orderItems);
         
         this.userId = userId;
         this.orderNumber = generateOrderNumber();
         this.status = OrderStatus.PENDING;
         this.discountAmount = BigDecimal.ZERO;
+        this.totalAmount = totalAmount != null ? totalAmount : BigDecimal.ZERO;
         
-        // 주문 항목 설정 및 금액 계산
-        setOrderItems(orderItems);
-        calculateAmounts();
+        calculateFinalAmount();
     }
     
     // 비즈니스 로직
@@ -83,18 +77,8 @@ public class Order extends BaseTimeEntity {
         calculateFinalAmount();
     }
     
-    private void setOrderItems(List<OrderItem> items) {
-        this.orderItems.clear();
-        if (items != null) {
-            this.orderItems.addAll(items);
-        }
-    }
-    
-    private void calculateAmounts() {
-        this.totalAmount = orderItems.stream()
-                .map(OrderItem::getTotalPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        
+    public void updateTotalAmount(BigDecimal totalAmount) {
+        this.totalAmount = totalAmount;
         calculateFinalAmount();
     }
     
@@ -106,16 +90,24 @@ public class Order extends BaseTimeEntity {
         return "ORD-" + System.currentTimeMillis() + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
     
+    // 데이터베이스 조회 시 값 설정용 메서드
+    public Order withDatabaseValues(Long id, String orderNumber, OrderStatus status, 
+                                   BigDecimal discountAmount, BigDecimal finalAmount,
+                                   java.time.LocalDateTime createdAt, java.time.LocalDateTime updatedAt) {
+        this.id = id;
+        this.orderNumber = orderNumber;
+        this.status = status;
+        this.discountAmount = discountAmount;
+        this.finalAmount = finalAmount;
+        this.setCreatedAt(createdAt);
+        this.setUpdatedAt(updatedAt);
+        return this;
+    }
+    
     // 검증 로직
     private void validateUserId(Long userId) {
         if (userId == null || userId <= 0) {
             throw new IllegalArgumentException("사용자 ID가 올바르지 않습니다.");
-        }
-    }
-    
-    private void validateOrderItems(List<OrderItem> orderItems) {
-        if (orderItems == null || orderItems.isEmpty()) {
-            throw new IllegalArgumentException("주문 항목이 비어있습니다.");
         }
     }
 }

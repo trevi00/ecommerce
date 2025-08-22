@@ -108,6 +108,12 @@ public class Coupon extends BaseTimeEntity {
         this.currentUsageCount++;
     }
     
+    public void cancelUse() {
+        if (this.currentUsageCount > 0) {
+            this.currentUsageCount--;
+        }
+    }
+    
     public void deactivate() {
         this.isActive = false;
     }

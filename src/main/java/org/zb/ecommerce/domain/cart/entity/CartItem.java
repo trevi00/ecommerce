@@ -20,15 +20,18 @@ public class CartItem extends BaseTimeEntity {
     @Id
     private Long id;
     
+    private Long cartId;
+    
     private Long productId;
     
     private Integer quantity;
     
     @Builder
-    public CartItem(Long productId, Integer quantity) {
+    public CartItem(Long cartId, Long productId, Integer quantity) {
         validateProductId(productId);
         validateQuantity(quantity);
         
+        this.cartId = cartId;
         this.productId = productId;
         this.quantity = quantity;
     }

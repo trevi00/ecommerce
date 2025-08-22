@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;
+import org.zb.ecommerce.domain.common.BaseTimeEntity;
 
 import java.time.LocalDateTime;
 
@@ -16,7 +17,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table("user_coupons")
-public class UserCoupon {
+public class UserCoupon extends BaseTimeEntity {
     
     @Id
     private Long id;
@@ -34,14 +35,14 @@ public class UserCoupon {
     private LocalDateTime usedAt;
     
     @Builder
-    public UserCoupon(Long userId, Long couponId) {
+    public UserCoupon(Long userId, Long couponId, CouponStatus status, LocalDateTime issuedAt) {
         validateUserId(userId);
         validateCouponId(couponId);
         
         this.userId = userId;
         this.couponId = couponId;
-        this.status = CouponStatus.AVAILABLE;
-        this.issuedAt = LocalDateTime.now();
+        this.status = status != null ? status : CouponStatus.AVAILABLE;
+        this.issuedAt = issuedAt != null ? issuedAt : LocalDateTime.now();
     }
     
     // 비즈니스 로직

@@ -109,4 +109,24 @@ public class UserService {
         
         return UserResponse.from(user);
     }
+    
+    /**
+     * ID로 사용자 조회
+     */
+    public UserResponse findById(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("사용자를 찾을 수 없습니다."));
+        
+        return UserResponse.from(user);
+    }
+    
+    /**
+     * 이메일로 사용자 조회
+     */
+    public UserResponse findByEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("사용자를 찾을 수 없습니다."));
+        
+        return UserResponse.from(user);
+    }
 }

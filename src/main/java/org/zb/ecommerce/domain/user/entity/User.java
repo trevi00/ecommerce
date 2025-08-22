@@ -60,6 +60,13 @@ public class User extends BaseTimeEntity {
         this.password = newPassword;
     }
     
+    public void updateRole(UserRole role) {
+        if (role == null) {
+            throw new IllegalArgumentException("사용자 역할은 필수입니다.");
+        }
+        this.role = role;
+    }
+    
     // 검증 로직
     private void validateEmail(String email) {
         if (email == null || email.isBlank()) {

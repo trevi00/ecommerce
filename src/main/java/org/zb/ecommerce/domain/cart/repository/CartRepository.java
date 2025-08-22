@@ -19,11 +19,6 @@ public interface CartRepository extends CrudRepository<Cart, Long> {
      */
     Optional<Cart> findByUserId(Long userId);
     
-    /**
-     * 사용자 ID로 장바구니와 아이템 함께 조회
-     */
-    @Query("SELECT c.* FROM carts c WHERE c.user_id = :userId")
-    Optional<Cart> findByUserIdWithItems(@Param("userId") Long userId);
     
     /**
      * 사용자의 장바구니 존재 여부 확인

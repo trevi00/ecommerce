@@ -5,13 +5,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Nested;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 
 /**
- * Order Entity 단위 테스트
+ * Order Entity 단위 테스트 (Separated Repository 패턴 적용)
  */
 class OrderTest {
     
@@ -24,23 +22,12 @@ class OrderTest {
         void createOrder_Success() {
             // given
             Long userId = 1L;
-            List<OrderItem> orderItems = Arrays.asList(
-                    OrderItem.builder()
-                            .productId(1L)
-                            .quantity(2)
-                            .unitPrice(new BigDecimal("10000"))
-                            .build(),
-                    OrderItem.builder()
-                            .productId(2L)
-                            .quantity(1)
-                            .unitPrice(new BigDecimal("5000"))
-                            .build()
-            );
+            BigDecimal totalAmount = new BigDecimal("25000");
             
             // when
             Order order = Order.builder()
                     .userId(userId)
-                    .orderItems(orderItems)
+                    .totalAmount(totalAmount)
                     .build();
             
             // then
@@ -51,37 +38,36 @@ class OrderTest {
             assertThat(order.getTotalAmount()).isEqualByComparingTo(new BigDecimal("25000"));
             assertThat(order.getDiscountAmount()).isEqualByComparingTo(BigDecimal.ZERO);
             assertThat(order.getFinalAmount()).isEqualByComparingTo(new BigDecimal("25000"));
-            assertThat(order.getOrderItems()).hasSize(2);
         }
         
         @Test
-        @DisplayName("주문 항목이 없을 때 예외 발생")
-        void createOrder_WithEmptyItems_ThrowsException() {
-            // when & then
-            assertThatThrownBy(() -> Order.builder()
+        @DisplayName("총 금액이 null일 때 기본값 0 적용")
+        void createOrder_WithNullTotalAmount_DefaultsToZero() {
+            // when
+            Order order = Order.builder()
                     .userId(1L)
-                    .orderItems(null)
-                    .build())
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("주문 항목이 비어있습니다.");
+                    .totalAmount(null)
+                    .build();
+            
+            // then
+            assertThat(order.getTotalAmount()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(order.getFinalAmount()).isEqualByComparingTo(BigDecimal.ZERO);
         }
         
         @Test
         @DisplayName("잘못된 userId로 생성 시 예외 발생")
         void createOrder_WithInvalidUserId_ThrowsException() {
-            // given
-            List<OrderItem> orderItems = Arrays.asList(
-                    OrderItem.builder()
-                            .productId(1L)
-                            .quantity(1)
-                            .unitPrice(new BigDecimal("10000"))
-                            .build()
-            );
-            
             // when & then
             assertThatThrownBy(() -> Order.builder()
                     .userId(null)
-                    .orderItems(orderItems)
+                    .totalAmount(new BigDecimal("10000"))
+                    .build())
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("사용자 ID가 올바르지 않습니다.");
+            
+            assertThatThrownBy(() -> Order.builder()
+                    .userId(0L)
+                    .totalAmount(new BigDecimal("10000"))
                     .build())
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("사용자 ID가 올바르지 않습니다.");
@@ -176,20 +162,62 @@ class OrderTest {
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("할인 금액이 총 금액보다 클 수 없습니다.");
         }
+        
+        @Test
+        @DisplayName("음수 할인 금액 적용 시 예외 발생")
+        void applyCoupon_NegativeDiscount_ThrowsException() {
+            // given
+            Order order = createSampleOrder();
+            BigDecimal discountAmount = new BigDecimal("-1000");
+            
+            // when & then
+            assertThatThrownBy(() -> order.applyCoupon(discountAmount))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("할인 금액이 올바르지 않습니다.");
+        }
+    }
+    
+    @Nested
+    @DisplayName("총 금액 업데이트")
+    class TotalAmountUpdate {
+        
+        @Test
+        @DisplayName("총 금액 업데이트 성공")
+        void updateTotalAmount_Success() {
+            // given
+            Order order = createSampleOrder();
+            BigDecimal newTotalAmount = new BigDecimal("15000");
+            
+            // when
+            order.updateTotalAmount(newTotalAmount);
+            
+            // then
+            assertThat(order.getTotalAmount()).isEqualByComparingTo(newTotalAmount);
+            assertThat(order.getFinalAmount()).isEqualByComparingTo(newTotalAmount); // 할인 없으므로 동일
+        }
+        
+        @Test
+        @DisplayName("할인 적용된 주문의 총 금액 업데이트")
+        void updateTotalAmount_WithDiscount_Success() {
+            // given
+            Order order = createSampleOrder();
+            order.applyCoupon(new BigDecimal("2000"));
+            BigDecimal newTotalAmount = new BigDecimal("15000");
+            
+            // when
+            order.updateTotalAmount(newTotalAmount);
+            
+            // then
+            assertThat(order.getTotalAmount()).isEqualByComparingTo(newTotalAmount);
+            assertThat(order.getDiscountAmount()).isEqualByComparingTo(new BigDecimal("2000"));
+            assertThat(order.getFinalAmount()).isEqualByComparingTo(new BigDecimal("13000"));
+        }
     }
     
     private Order createSampleOrder() {
-        List<OrderItem> orderItems = Arrays.asList(
-                OrderItem.builder()
-                        .productId(1L)
-                        .quantity(1)
-                        .unitPrice(new BigDecimal("10000"))
-                        .build()
-        );
-        
         return Order.builder()
                 .userId(1L)
-                .orderItems(orderItems)
+                .totalAmount(new BigDecimal("10000"))
                 .build();
     }
 }

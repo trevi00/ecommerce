@@ -41,7 +41,22 @@ public class OrderResponse {
                 .discountAmount(order.getDiscountAmount())
                 .finalAmount(order.getFinalAmount())
                 .status(order.getStatus())
-                .items(order.getOrderItems().stream()
+                .items(List.of()) // 빈 리스트로 설정, 필요시 별도로 조회
+                .createdAt(order.getCreatedAt())
+                .updatedAt(order.getUpdatedAt())
+                .build();
+    }
+    
+    public static OrderResponse from(Order order, List<org.zb.ecommerce.domain.order.entity.OrderItem> orderItems) {
+        return OrderResponse.builder()
+                .id(order.getId())
+                .userId(order.getUserId())
+                .orderNumber(order.getOrderNumber())
+                .totalAmount(order.getTotalAmount())
+                .discountAmount(order.getDiscountAmount())
+                .finalAmount(order.getFinalAmount())
+                .status(order.getStatus())
+                .items(orderItems.stream()
                         .map(OrderItemResponse::from)
                         .collect(Collectors.toList()))
                 .createdAt(order.getCreatedAt())

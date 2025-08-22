@@ -18,4 +18,13 @@ public abstract class BaseTimeEntity {
     
     @LastModifiedDate
     private LocalDateTime updatedAt;
+    
+    // 데이터베이스 조회 시 값 설정용 메서드
+    protected void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+    
+    protected void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 }

@@ -15,6 +15,7 @@ import org.zb.ecommerce.domain.order.entity.OrderItem;
 import org.zb.ecommerce.domain.order.entity.OrderStatus;
 import org.zb.ecommerce.domain.order.exception.OrderNotFoundException;
 import org.zb.ecommerce.domain.order.repository.OrderRepository;
+import org.zb.ecommerce.domain.order.repository.OrderItemRepository;
 import org.zb.ecommerce.domain.product.entity.Product;
 import org.zb.ecommerce.domain.product.repository.ProductRepository;
 import org.zb.ecommerce.domain.product.service.ProductService;
@@ -30,9 +31,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
+import java.lang.reflect.Field;
 
 /**
- * OrderService 단위 테스트
+ * OrderService 단위 테스트 (Separated Repository 패턴 적용)
  */
 @ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
@@ -44,6 +46,9 @@ class OrderServiceTest {
     private OrderRepository orderRepository;
     
     @Mock
+    private OrderItemRepository orderItemRepository;
+    
+    @Mock
     private ProductRepository productRepository;
     
     @Mock
@@ -52,6 +57,7 @@ class OrderServiceTest {
     private Product testProduct1;
     private Product testProduct2;
     private Order testOrder;
+    private List<OrderItem> testOrderItems;
     
     @BeforeEach
     void setUp() {
@@ -60,30 +66,57 @@ class OrderServiceTest {
                 .price(new BigDecimal("1500000"))
                 .stockQuantity(10)
                 .build();
+        setProductId(testProduct1, 1L);
         
         testProduct2 = Product.builder()
                 .name("마우스")
                 .price(new BigDecimal("50000"))
                 .stockQuantity(20)
                 .build();
+        setProductId(testProduct2, 2L);
         
-        List<OrderItem> orderItems = Arrays.asList(
+        // Order 생성 (separated repository 패턴에 맞게)
+        testOrder = Order.builder()
+                .userId(1L)
+                .totalAmount(new BigDecimal("1600000"))
+                .build();
+        setOrderId(testOrder, 1L);
+        
+        // OrderItem 분리 생성
+        testOrderItems = Arrays.asList(
                 OrderItem.builder()
+                        .orderId(1L)
                         .productId(1L)
                         .quantity(1)
                         .unitPrice(testProduct1.getPrice())
                         .build(),
                 OrderItem.builder()
+                        .orderId(1L)
                         .productId(2L)
                         .quantity(2)
                         .unitPrice(testProduct2.getPrice())
                         .build()
         );
-        
-        testOrder = Order.builder()
-                .userId(1L)
-                .orderItems(orderItems)
-                .build();
+    }
+    
+    private void setProductId(Product product, Long id) {
+        try {
+            Field idField = Product.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(product, id);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to set product ID", e);
+        }
+    }
+    
+    private void setOrderId(Order order, Long id) {
+        try {
+            Field idField = Order.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(order, id);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to set order ID", e);
+        }
     }
     
     @Nested
@@ -106,6 +139,7 @@ class OrderServiceTest {
             given(productService.getProductEntities(anyList()))
                     .willReturn(Arrays.asList(testProduct1, testProduct2));
             given(orderRepository.save(any(Order.class))).willReturn(testOrder);
+            given(orderItemRepository.save(any(OrderItem.class))).willReturn(testOrderItems.get(0), testOrderItems.get(1));
             given(productRepository.decreaseStock(1L, 1)).willReturn(1);
             given(productRepository.decreaseStock(2L, 2)).willReturn(1);
             
@@ -125,11 +159,9 @@ class OrderServiceTest {
             // Mockito verify 검증 - 상호작용 확인
             verify(productService).getProductEntities(anyList());
             verify(orderRepository).save(any(Order.class));
+            verify(orderItemRepository, times(2)).save(any(OrderItem.class));
             verify(productRepository).decreaseStock(1L, 1);
             verify(productRepository).decreaseStock(2L, 2);
-            
-            // 추가적인 verify - 호출 횟수 및 순서 검증
-            verify(productRepository, times(2)).decreaseStock(anyLong(), anyInt());
         }
         
         @Test
@@ -169,6 +201,8 @@ class OrderServiceTest {
             
             given(orderRepository.findByIdAndUserId(orderId, userId))
                     .willReturn(Optional.of(testOrder));
+            given(orderItemRepository.findByOrderId(orderId))
+                    .willReturn(testOrderItems);
             
             // when
             OrderResponse response = orderService.getOrder(orderId, userId);
@@ -179,11 +213,12 @@ class OrderServiceTest {
                 () -> assertNotNull(response, "주문 조회 응답이 null이 아니어야 함"),
                 () -> assertEquals(userId, response.getUserId()),
                 () -> assertTrue(orderId > 0, "유효한 주문 ID여야 함"),
-                () -> assertFalse(response.getItems().isEmpty(), "주문 항목이 있어야 함")
+                () -> assertEquals(2, response.getItems().size(), "주문 항목이 2개여야 함")
             );
             
             // Mockito verify
             verify(orderRepository).findByIdAndUserId(orderId, userId);
+            verify(orderItemRepository).findByOrderId(orderId);
             verify(orderRepository, times(1)).findByIdAndUserId(anyLong(), anyLong());
         }
         
@@ -216,6 +251,8 @@ class OrderServiceTest {
             
             given(orderRepository.findByIdAndUserId(orderId, userId))
                     .willReturn(Optional.of(testOrder));
+            given(orderItemRepository.findByOrderId(orderId))
+                    .willReturn(testOrderItems);
             given(orderRepository.save(any(Order.class))).willReturn(testOrder);
             
             // when
@@ -227,6 +264,7 @@ class OrderServiceTest {
             
             verify(productRepository).increaseStock(1L, 1);
             verify(productRepository).increaseStock(2L, 2);
+            verify(orderItemRepository).findByOrderId(orderId);
         }
     }
 }

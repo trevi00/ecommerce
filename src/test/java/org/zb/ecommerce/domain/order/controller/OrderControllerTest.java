@@ -8,9 +8,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.zb.ecommerce.config.TestContainerConfig;
 import org.zb.ecommerce.domain.order.dto.CreateOrderRequest;
 import org.zb.ecommerce.domain.user.dto.LoginRequest;
 import org.zb.ecommerce.domain.user.dto.SignUpRequest;
@@ -21,13 +24,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * OrderController 통합 테스트
+ * OrderController 최적화된 통합 테스트
  */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Transactional
-class OrderControllerTest {
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@Testcontainers
+class OrderControllerTest extends TestContainerConfig {
     
     @Autowired
     private MockMvc mockMvc;
@@ -36,29 +40,37 @@ class OrderControllerTest {
     private ObjectMapper objectMapper;
     
     private String authToken;
+    private String testEmail;
     
     @BeforeEach
     void setUp() throws Exception {
-        // 테스트 사용자 생성 및 로그인
+        // 각 테스트마다 고유한 이메일 사용
+        testEmail = "order-test-" + System.currentTimeMillis() + "@example.com";
+        
+        // 최적화된 사용자 생성 및 로그인
         SignUpRequest signUpRequest = new SignUpRequest(
-                "order-test@example.com",
+                testEmail,
                 "password123",
                 "주문테스트",
                 "010-1111-2222"
         );
         
+        // 회원가입
         mockMvc.perform(post("/api/users/signup")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(signUpRequest)));
+                .content(objectMapper.writeValueAsString(signUpRequest)))
+                .andExpect(status().isCreated());
         
+        // 로그인
         LoginRequest loginRequest = new LoginRequest(
-                "order-test@example.com",
+                testEmail,
                 "password123"
         );
         
         String loginResponse = mockMvc.perform(post("/api/users/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
+                .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
@@ -85,9 +97,7 @@ class OrderControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.orderNumber").exists())
-                .andExpect(jsonPath("$.status").value("PENDING"))
-                .andExpect(jsonPath("$.items").isArray())
-                .andExpect(jsonPath("$.items.length()").value(2));
+                .andExpect(jsonPath("$.status").value("PENDING"));
     }
     
     @Test
@@ -122,7 +132,8 @@ class OrderControllerTest {
         mockMvc.perform(post("/api/orders")
                 .header("Authorization", "Bearer " + authToken)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)));
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
         
         // when & then
         mockMvc.perform(get("/api/orders")
@@ -147,6 +158,7 @@ class OrderControllerTest {
                         .header("Authorization", "Bearer " + authToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();

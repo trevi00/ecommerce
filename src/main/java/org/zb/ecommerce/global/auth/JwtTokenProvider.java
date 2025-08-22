@@ -21,7 +21,11 @@ public class JwtTokenProvider {
     public JwtTokenProvider(
             @Value("${jwt.secret:mySecretKey}") String secretKey,
             @Value("${jwt.token-validity-in-seconds:3600}") long tokenValidityInSeconds) {
-        this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
+        if (secretKey.length() < 32) {
+            this.key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+        } else {
+            this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
+        }
         this.tokenValidityInMilliseconds = tokenValidityInSeconds * 1000;
     }
     
