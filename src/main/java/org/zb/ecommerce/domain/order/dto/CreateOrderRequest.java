@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Positive;
 import java.util.List;
 
 /**
- * 주문 생성 요청 DTO - record로 변환
+ * 주문 생성 요청 DTO
  */
 public record CreateOrderRequest(
     @NotEmpty(message = "주문 항목은 필수입니다.")
