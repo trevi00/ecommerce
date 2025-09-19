@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 쿠폰 생성 요청 DTO - record로 변환
+ * 쿠폰 생성 요청 DTO
  */
 public record CreateCouponRequest(
     @NotBlank(message = "쿠폰 이름은 필수입니다.")
