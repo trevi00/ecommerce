@@ -4,7 +4,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
 /**
- * 장바구니 추가 요청 DTO - record로 변환
+ * 장바구니 추가 요청 DTO
  */
 public record AddToCartRequest(
     @NotNull(message = "상품 ID는 필수입니다.")
