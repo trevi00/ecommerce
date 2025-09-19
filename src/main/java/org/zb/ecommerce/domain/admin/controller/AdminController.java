@@ -5,9 +5,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.zb.ecommerce.domain.admin.dto.*;
 import org.zb.ecommerce.domain.admin.service.AdminService;
+import org.zb.ecommerce.domain.user.dto.UserResponse;
 import org.zb.ecommerce.domain.user.entity.UserRole;
+import org.zb.ecommerce.domain.user.service.UserService;
 import org.zb.ecommerce.global.auth.AuthUser;
 import org.zb.ecommerce.global.auth.LoginRequired;
+import org.zb.ecommerce.global.exception.BusinessException;
+import org.zb.ecommerce.global.exception.ErrorCode;
 
 import java.util.List;
 
@@ -20,6 +24,7 @@ import java.util.List;
 public class AdminController {
     
     private final AdminService adminService;
+    private final UserService userService;
     
     /**
      * 관리자 대시보드 데이터 조회
@@ -151,7 +156,9 @@ public class AdminController {
     }
     
     private void validateAdminRole(Long userId) {
-        // UserService를 통해 사용자 역할 검증 로직 구현 필요
-        // 실제로는 UserService에서 사용자 정보를 조회하여 ADMIN 권한인지 확인
+        UserResponse user = userService.findById(userId);
+        if (user.role() != UserRole.ADMIN) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        }
     }
 }
