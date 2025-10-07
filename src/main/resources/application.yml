@@ -1,0 +1,124 @@
+spring:
+  application:
+    name: ecommerce
+  
+  profiles:
+    active: mysql
+
+---
+# MySQL Profile (기본 개발환경)
+spring:
+  config:
+    activate:
+      on-profile: mysql
+  
+  # MySQL 설정
+  datasource:
+    url: jdbc:mysql://localhost:3307/ecommerce?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${SPRING_DATASOURCE_USERNAME:ecommerce_app}
+    password: ${SPRING_DATASOURCE_PASSWORD:ecommerce_pass}
+  
+  # Spring Data JDBC 설정
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+  
+  # Redis 설정
+  redis:
+    host: localhost
+    port: 6380
+    timeout: 2000ms
+
+---
+# H2 Profile (개발 테스트용)
+spring:
+  config:
+    activate:
+      on-profile: h2
+  
+  # H2 데이터베이스 설정
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  
+  # H2 콘솔 설정
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  
+  # Spring Data JDBC 설정
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+  
+  # Redis 설정
+  redis:
+    host: localhost
+    port: 6380
+    timeout: 2000ms
+
+---
+# Docker Profile (Docker 환경)
+spring:
+  config:
+    activate:
+      on-profile: docker
+  
+  # MySQL 설정
+  datasource:
+    url: jdbc:mysql://mysql:3306/ecommerce?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${SPRING_DATASOURCE_USERNAME:ecommerce_app}
+    password: ${SPRING_DATASOURCE_PASSWORD:ecommerce_pass}
+  
+  # Spring Data JDBC 설정
+  sql:
+    init:
+      mode: never
+  
+  # Redis 설정 (Docker)
+  redis:
+    host: ${SPRING_REDIS_HOST:redis}
+    port: ${SPRING_REDIS_PORT:6379}
+    timeout: 2000ms
+
+---
+# Test Profile
+spring:
+  config:
+    activate:
+      on-profile: test
+  
+  # 테스트용 데이터베이스 설정 (TestContainers에서 동적으로 설정됨)
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  
+  # Spring Data JDBC 설정
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:test-schema.sql
+
+# 공통 설정
+logging:
+  level:
+    org.zb.ecommerce: DEBUG
+    org.springframework.web: INFO
+    org.springframework.jdbc: DEBUG
+
+server:
+  port: 8080
+
+jwt:
+  secret: ${JWT_SECRET:+cy+aV+JMMhZZ8UBKImm9vnkVZhMg++JBcvqYigWPPM=}
+  expiration: ${JWT_EXPIRATION:86400000}
+  token-validity-in-seconds: ${JWT_TOKEN_VALIDITY_IN_SECONDS:3600}
