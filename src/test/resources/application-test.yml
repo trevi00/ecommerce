@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: ecommerce-test
+  
+  # 테스트용 인메모리 데이터베이스 (기본값, TestContainers가 오버라이드 할 수 있음)
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  
+  # H2 설정
+  h2:
+    console:
+      enabled: false
+  
+  # SQL 초기화 비활성화 (테스트에서 @Sql 사용)
+  sql:
+    init:
+      mode: never
+  
+  # Redis 설정 (테스트용, TestContainers가 오버라이드 할 수 있음)
+  redis:
+    host: localhost
+    port: 6379
+    timeout: 2000ms
+
+# 로깅 설정 (테스트 시 덜 verbose)
+logging:
+  level:
+    org.zb.ecommerce: INFO
+    org.springframework.web: WARN
+    org.springframework.jdbc: WARN
+    org.testcontainers: DEBUG
+    root: WARN
+
+# JWT 설정 (테스트용)
+jwt:
+  secret: testSecretKey123456789012345678901234567890
+  expiration: 3600000
