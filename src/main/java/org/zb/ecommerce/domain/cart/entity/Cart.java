@@ -13,7 +13,7 @@ import org.zb.ecommerce.domain.common.BaseTimeEntity;
  */
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table("carts")
+@Table("cart")
 public class Cart extends BaseTimeEntity {
     
     @Id

@@ -21,12 +21,14 @@ CREATE TABLE IF NOT EXISTS products (
     name VARCHAR(100) NOT NULL,
     description TEXT,
     price DECIMAL(10,2) NOT NULL,
+    category VARCHAR(50),
     stock_quantity INT NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
+
     INDEX idx_products_name (name),
     INDEX idx_products_price (price),
+    INDEX idx_products_category (category),
     INDEX idx_products_created_at (created_at)
 );
 
