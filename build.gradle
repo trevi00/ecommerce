@@ -2,6 +2,8 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.4'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'jacoco'
+    id 'org.sonarqube' version '6.0.1.5171'
 }
 
 group = 'org.zb'
@@ -28,44 +30,172 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
-    
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
     // Redis 의존성 추가
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-    
+
     // 보안 및 JWT (기본)
     implementation 'org.springframework.security:spring-security-crypto'
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
-    
+
     // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
-    
+
     // 데이터베이스 (개발용 H2)
     runtimeOnly 'com.h2database:h2'
-    
+
     // MySQL (운영용)
     runtimeOnly 'com.mysql:mysql-connector-j'
-    
+
     // 개발 도구
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
-    
+
     // 테스트
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    
+
     // 테스트 컨테이너 의존성
     testImplementation platform('org.testcontainers:testcontainers-bom:1.21.3')
     testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation 'org.testcontainers:mysql'
     testImplementation 'org.testcontainers:testcontainers'
-    
+
+    // Fixture Monkey - 테스트 데이터 생성
+    testImplementation 'com.navercorp.fixturemonkey:fixture-monkey-starter:1.1.5'
+    testImplementation 'com.navercorp.fixturemonkey:fixture-monkey-jakarta-validation:1.1.5'
+
+    // REST Assured - API 테스트
+    testImplementation 'io.rest-assured:rest-assured:5.5.0'
+    testImplementation 'io.rest-assured:spring-mock-mvc:5.5.0'
 
 }
 
 tasks.named('test') {
     useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+// JaCoCo 설정
+jacoco {
+    toolVersion = "0.8.12"
+}
+
+jacocoTestReport {
+    dependsOn test
+
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+    }
+
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                '**/config/**',
+                '**/dto/**',
+                '**/entity/**',
+                '**/domain/**/entity/**',
+                '**/domain/**/dto/**',
+                '**/*Application.class',
+                '**/*Config.class'
+            ])
+        }))
+    }
+}
+
+jacocoTestCoverageVerification {
+    dependsOn jacocoTestReport
+
+    violationRules {
+        rule {
+            enabled = true
+            element = 'CLASS'
+
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.70
+            }
+
+            limit {
+                counter = 'BRANCH'
+                value = 'COVEREDRATIO'
+                minimum = 0.70
+            }
+        }
+
+        rule {
+            enabled = true
+            element = 'PACKAGE'
+
+            // Controller 레이어는 통합 테스트 강제
+            includes = ['org.zb.ecommerce.domain.*.controller.*']
+
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.80
+            }
+        }
+    }
+
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                '**/config/**',
+                '**/dto/**',
+                '**/entity/**',
+                '**/domain/**/entity/**',
+                '**/domain/**/dto/**',
+                '**/*Application.class',
+                '**/*Config.class'
+            ])
+        }))
+    }
+}
+
+// SonarQube 설정
+sonar {
+    properties {
+        property "sonar.projectKey", "ecommerce"
+        property "sonar.projectName", "E-Commerce Platform"
+        property "sonar.host.url", "http://localhost:9000"
+        property "sonar.java.coveragePlugin", "jacoco"
+        property "sonar.coverage.jacoco.xmlReportPaths", "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"
+
+        // 코드 품질 규칙
+        property "sonar.java.source", "21"
+        property "sonar.sourceEncoding", "UTF-8"
+
+        // 제외할 파일들
+        property "sonar.exclusions", [
+            "**/config/**",
+            "**/dto/**",
+            "**/entity/**",
+            "**/domain/**/entity/**",
+            "**/domain/**/dto/**",
+            "**/*Application.java",
+            "**/*Config.java"
+        ].join(",")
+
+        // 테스트 커버리지 최소 기준
+        property "sonar.coverage.exclusions", [
+            "**/config/**",
+            "**/dto/**",
+            "**/entity/**",
+            "**/*Application.java"
+        ].join(",")
+    }
+}
+
+// 빌드 시 코드 품질 검증
+tasks.named('build') {
+    dependsOn jacocoTestCoverageVerification
 }

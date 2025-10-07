@@ -1,0 +1,75 @@
+{
+  "name": "E-Commerce Quality Gate",
+  "conditions": [
+    {
+      "metric": "new_coverage",
+      "op": "LT",
+      "error": "70",
+      "warning": "75"
+    },
+    {
+      "metric": "new_duplicated_lines_density",
+      "op": "GT",
+      "error": "3",
+      "warning": "2"
+    },
+    {
+      "metric": "new_violations",
+      "op": "GT",
+      "error": "0",
+      "warning": "0"
+    },
+    {
+      "metric": "new_blocker_violations",
+      "op": "GT",
+      "error": "0"
+    },
+    {
+      "metric": "new_critical_violations",
+      "op": "GT",
+      "error": "0"
+    },
+    {
+      "metric": "new_major_violations",
+      "op": "GT",
+      "error": "5",
+      "warning": "3"
+    },
+    {
+      "metric": "new_security_hotspots",
+      "op": "GT",
+      "error": "0"
+    },
+    {
+      "metric": "new_bugs",
+      "op": "GT",
+      "error": "0"
+    },
+    {
+      "metric": "new_vulnerabilities",
+      "op": "GT",
+      "error": "0"
+    },
+    {
+      "metric": "new_code_smells",
+      "op": "GT",
+      "error": "10",
+      "warning": "5"
+    },
+    {
+      "metric": "new_maintainability_rating",
+      "op": "GT",
+      "error": "1"
+    },
+    {
+      "metric": "new_reliability_rating",
+      "op": "GT",
+      "error": "1"
+    },
+    {
+      "metric": "new_security_rating",
+      "op": "GT",
+      "error": "1"
+    }
+  ]
+}

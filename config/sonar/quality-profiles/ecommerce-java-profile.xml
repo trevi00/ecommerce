@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<profile>
+    <name>E-Commerce Java Quality Profile</name>
+    <language>java</language>
+    <rules>
+        <!-- 코드 복잡도 관리 -->
+        <rule>
+            <repositoryKey>java</repositoryKey>
+            <key>S1541</key> <!-- 복잡도가 높은 메서드 -->
+            <priority>MAJOR</priority>
+            <parameters>
+                <parameter>
+                    <key>threshold</key>
+                    <value>15</value> <!-- 메서드 복잡도 최대 15 -->
+                </parameter>
+            </parameters>
+        </rule>
+
+        <rule>
+            <repositoryKey>java</repositoryKey>
+            <key>S1142</key> <!-- 메서드에 너무 많은 return문 -->
+            <priority>MAJOR</priority>
+            <parameters>
+                <parameter>
+                    <key>max</key>
+                    <value>3</value>
+                </parameter>
+            </parameters>
+        </rule>
+
+        <!-- 보안 취약점 -->
+        <rule>
+            <repositoryKey>java</repositoryKey>
+            <key>S2245</key> <!-- Random 대신 SecureRandom 사용 -->
+            <priority>CRITICAL</priority>
+        </rule>
+
+        <rule>
+            <repositoryKey>java</repositoryKey>
+            <key>S2068</key> <!-- 하드코딩된 비밀번호 -->
+            <priority>BLOCKER</priority>
+        </rule>
+
+        <rule>
+            <repositoryKey>java</repositoryKey>
+            <key>S5852</key> <!-- SQL 인젝션 방지 -->
+            <priority>CRITICAL</priority>
+        </rule>
+
+        <!-- 코드 스멜 -->
+        <rule>
+            <repositoryKey>java</repositoryKey>
+            <key>S1172</key> <!-- 사용하지 않는 메서드 파라미터 -->
+            <priority>MAJOR</priority>
+        </rule>
+
+        <rule>
+            <repositoryKey>java</repositoryKey>
+            <key>S1118</key> <!-- private 생성자 추가 (유틸리티 클래스) -->
+            <priority>MAJOR</priority>
+        </rule>
+
+        <rule>
+            <repositoryKey>java</repositoryKey>
+            <key>S1192</key> <!-- 문자열 리터럴 중복 -->
+            <priority>MINOR</priority>
+            <parameters>
+                <parameter>
+                    <key>threshold</key>
+                    <value>3</value>
+                </parameter>
+            </parameters>
+        </rule>
+
+        <!-- 버그 -->
+        <rule>
+            <repositoryKey>java</repositoryKey>
+            <key>S1854</key> <!-- 사용되지 않는 변수 할당 -->
+            <priority>MAJOR</priority>
+        </rule>
+
+        <rule>
+            <repositoryKey>java</repositoryKey>
+            <key>S2259</key> <!-- Null 포인터 역참조 -->
+            <priority>BLOCKER</priority>
+        </rule>
+
+        <!-- 테스트 코드 품질 -->
+        <rule>
+            <repositoryKey>java</repositoryKey>
+            <key>S5960</key> <!-- 테스트에서 assertion 사용 -->
+            <priority>MAJOR</priority>
+        </rule>
+
+        <rule>
+            <repositoryKey>java</repositoryKey>
+            <key>S2699</key> <!-- 테스트에 최소 하나의 assertion 필요 -->
+            <priority>CRITICAL</priority>
+        </rule>
+
+        <!-- 네이밍 컨벤션 -->
+        <rule>
+            <repositoryKey>java</repositoryKey>
+            <key>S100</key> <!-- 메서드명 네이밍 규칙 -->
+            <priority>MINOR</priority>
+        </rule>
+
+        <rule>
+            <repositoryKey>java</repositoryKey>
+            <key>S101</key> <!-- 클래스명 네이밍 규칙 -->
+            <priority>MINOR</priority>
+        </rule>
+
+        <rule>
+            <repositoryKey>java</repositoryKey>
+            <key>S115</key> <!-- 상수 네이밍 규칙 -->
+            <priority>MINOR</priority>
+        </rule>
+
+        <!-- 예외 처리 -->
+        <rule>
+            <repositoryKey>java</repositoryKey>
+            <key>S1166</key> <!-- 예외를 삼키지 말 것 -->
+            <priority>CRITICAL</priority>
+        </rule>
+
+        <rule>
+            <repositoryKey>java</repositoryKey>
+            <key>S112</key> <!-- 일반 예외를 throw하지 말 것 -->
+            <priority>MAJOR</priority>
+        </rule>
+
+        <!-- 트랜잭션 관리 -->
+        <rule>
+            <repositoryKey>java</repositoryKey>
+            <key>S2229</key> <!-- @Transactional 사용 시 주의 -->
+            <priority>MAJOR</priority>
+        </rule>
+    </rules>
+</profile>
